@@ -1,21 +1,62 @@
-```txt
-npm install
-npm run dev
+# دِوکَست — آکادمی برنامه‌نویسی
+
+لندینگ‌پیج مینیمال و حرفه‌ای برای یک آکادمی آموزش برنامه‌نویسی، ساخته‌شده با **Hono + Cloudflare Pages + Tailwind CSS**.
+
+## نمای کلی پروژه
+- **نام پروژه**: webapp (دِوکَست)
+- **هدف**: ارائهٔ یک صفحهٔ index مدرن، سریع و واکنش‌گرا برای معرفی مسیرهای یادگیری، دوره‌ها و ثبت‌نام.
+- **ویژگی‌ها**:
+  - طراحی مینیمال، RTL و فارسی با فونت Vazirmatn
+  - حالت روشن/تاریک (Dark Mode) با ذخیره در localStorage
+  - انیمیشن ظاهرشدن هنگام اسکرول (IntersectionObserver)
+  - شمارنده‌های آماری با اعداد فارسی
+  - نوار تکنولوژی متحرک (marquee)
+  - کارت‌های مسیر یادگیری، دوره‌ها، نظرات دانشجویان و آکاردئون سؤالات متداول
+  - فرم ثبت‌نام با اعتبارسنجی سمت کلاینت
+
+## URLs
+- **پیش‌نمایش (sandbox)**: https://3000-i6w0yyeexwx6uzs3s8y4w-8f57ffe2.sandbox.novita.ai
+- **محلی**: http://localhost:3000
+
+## معماری داده
+- **مدل داده**: فعلاً فقط داده‌های استاتیک داخل `src/pages/home.tsx` (آرایه‌های paths / courses / testimonials / faqs).
+- **سرویس ذخیره‌سازی**: هیچ‌کدام — پروژه فعلاً بدون پایگاه‌داده است.
+- **جریان داده**: کاملاً سمت کلاینت؛ فرم ثبت‌نام فقط اعتبارسنجی و پیام نمایش می‌دهد.
+
+## راهنمای کاربر
+1. با دکمه در نوار بالا بین حالت روشن و تاریک جابه‌جا شوید.
+2. از بخش «مسیرها» نوع یادگیری موردنظر را انتخاب کنید.
+3. در بخش پایانی ایمیل خود را وارد کرده و ثبت‌نام رایگان کنید.
+
+## ساختار پروژه
+```
+src/
+├── index.tsx              # نقطه ورود Hono
+├── renderer.tsx           # قالب HTML (فونت، Tailwind، آیکون‌ها)
+├── components/icons.tsx   # آیکون‌های SVG
+└── pages/home.tsx         # کل صفحهٔ index
+public/static/
+├── app.js                 # دارک‌مود، reveal، شمارنده، منو، فرم
+├── style.css              # استایل‌های سفارشی
+└── tailwind.config.js     # تنظیمات Tailwind CDN
 ```
 
-```txt
-npm run deploy
+## توسعهٔ محلی
+```bash
+npm run build                       # ساخت پروژه
+pm2 start ecosystem.config.cjs      # اجرای سرویس روی پورت 3000
+curl http://localhost:3000          # تست
+pm2 logs webapp --nostream          # مشاهدهٔ لاگ
 ```
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+## استقرار
+- **پلتفرم**: Cloudflare Pages
+- **وضعیت**: ✅ فعال (پیش‌نمایش sandbox)
+- **پشتهٔ فناوری**: Hono + TypeScript + Tailwind CSS (CDN)
+- **آخرین به‌روزرسانی**: ۱۴۰۴
 
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
+## مراحل بعدی پیشنهادی
+- اتصال فرم ثبت‌نام به یک API و ذخیره در Cloudflare D1
+- افزودن صفحات داخلی دوره‌ها و مسیرها
+- جست‌وجو و فیلتر دوره‌ها
+- احراز هویت کاربران و داشبورد پیشرفت
