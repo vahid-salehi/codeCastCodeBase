@@ -22,7 +22,7 @@ export const Logo: FC<{ class?: string }> = ({ class: cls = '' }) => (
   </a>
 )
 
-export const Nav: FC<{ path: string }> = ({ path }) => (
+export const Nav: FC<{ path: string; user?: { name: string | null; phone: string } | null }> = ({ path, user }) => (
   <header class="fixed inset-x-0 top-0 z-50">
     <nav class="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-2xl px-4 py-3 sm:px-6" aria-label="ناوبری اصلی">
       <Logo />
@@ -53,12 +53,32 @@ export const Nav: FC<{ path: string }> = ({ path }) => (
           <SunIcon class="h-5 w-5 hidden dark:block" />
           <MoonIcon class="h-5 w-5 block dark:hidden" />
         </button>
-        <a
-          href="/#cta"
-          class="hidden rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 sm:inline-block dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          شروع رایگان
-        </a>
+        {user ? (
+          <a
+            href="/account"
+            class="hidden items-center gap-2 rounded-xl bg-slate-900 py-1.5 pl-3 pr-1.5 text-sm font-semibold text-white transition hover:bg-slate-700 sm:inline-flex dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            <span class="grid h-6 w-6 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-[0.7rem] font-black text-white">
+              {(user.name ?? '؟').charAt(0)}
+            </span>
+            <span class="max-w-[7rem] truncate">{user.name ?? 'حساب من'}</span>
+          </a>
+        ) : (
+          <>
+            <a
+              href="/login"
+              class="hidden rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 md:inline-block dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              ورود
+            </a>
+            <a
+              href="/register"
+              class="hidden rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 sm:inline-block dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              شروع رایگان
+            </a>
+          </>
+        )}
         <button
           id="menu-toggle"
           type="button"
@@ -80,9 +100,18 @@ export const Nav: FC<{ path: string }> = ({ path }) => (
           {item.label}
         </a>
       ))}
-      <a href="/#cta" class="mt-1 rounded-lg bg-slate-900 px-3 py-2 text-center text-white dark:bg-white dark:text-slate-900">
-        شروع رایگان
-      </a>
+      {user ? (
+        <a href="/account" class="mt-1 rounded-lg bg-slate-900 px-3 py-2 text-center text-white dark:bg-white dark:text-slate-900">
+          حساب من
+        </a>
+      ) : (
+        <>
+          <a href="/login" class="rounded-lg border border-slate-200 px-3 py-2 text-center dark:border-slate-700">ورود</a>
+          <a href="/register" class="mt-1 rounded-lg bg-slate-900 px-3 py-2 text-center text-white dark:bg-white dark:text-slate-900">
+            شروع رایگان
+          </a>
+        </>
+      )}
     </div>
   </header>
 )
@@ -160,7 +189,11 @@ export const Breadcrumbs: FC<{ items: { href?: string; label: string }[] }> = ({
   </nav>
 )
 
-export const PageShell: FC<{ path: string; children: Child }> = ({ path, children }) => (
+export const PageShell: FC<{ path: string; user?: { name: string | null; phone: string } | null; children: Child }> = ({
+  path,
+  user,
+  children,
+}) => (
   <>
     <a
       href="#main"
@@ -168,7 +201,7 @@ export const PageShell: FC<{ path: string; children: Child }> = ({ path, childre
     >
       رفتن به محتوای اصلی
     </a>
-    <Nav path={path} />
+    <Nav path={path} user={user} />
     <main id="main">{children}</main>
     <Footer />
     <script src="/static/app.js" defer></script>

@@ -24,4 +24,12 @@ export interface D1Database {
 
 export type Bindings = {
   DB: D1Database
+  /** متغیرهای محیطی سرویس پیامک */
+  SMS_PROVIDER?: string
+  KAVENEGAR_API_KEY?: string
+  KAVENEGAR_SENDER?: string
+  KAVENEGAR_TEMPLATE?: string
+  TWILIO_ACCOUNT_SID?: string
+  TWILIO_AUTH_TOKEN?: string
+  TWILIO_FROM?: string
 }

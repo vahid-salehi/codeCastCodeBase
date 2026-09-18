@@ -158,4 +158,244 @@
   /* ---------- ۶. سال جاری در فوتر ---------- */
   const year = document.getElementById('year')
   if (year) year.textContent = new Date().getFullYear()
+
+  /* ---------- ۷. جریان ورود/ثبت‌نام با OTP ---------- */
+  const requestForm = document.getElementById('otp-request-form')
+  const verifyForm = document.getElementById('otp-verify-form')
+
+  if (requestForm && verifyForm) {
+    const msgRequest = document.getElementById('otp-request-msg')
+    const msgVerify = document.getElementById('otp-verify-msg')
+    const phoneDisplay = document.getElementById('otp-phone-display')
+    const codeInput = document.getElementById('otp-code')
+    const resendBtn = document.getElementById('otp-resend')
+    const resendSeconds = document.getElementById('otp-resend-seconds')
+    const countdownEl = document.getElementById('otp-countdown')
+    const editPhoneBtn = document.getElementById('otp-edit-phone')
+    const backBtn = document.getElementById('otp-back')
+    const devBox = document.getElementById('dev-otp-box')
+    const devCode = document.getElementById('dev-otp-code')
+
+    const purpose = requestForm.dataset.purpose || 'login'
+    const nextUrl = (requestForm.querySelector('[name="next"]') || {}).value || '/'
+    const nameInput = document.getElementById('name')
+
+    let currentPhone = ''
+    let otpTimer = null
+    let resendTimer = null
+
+    const setMsg = (el, text, tone) => {
+      if (!el) return
+      el.textContent = text
+      el.className = 'min-h-[1.25rem] text-xs font-medium ' + (tone === 'error' ? 'text-red-500' : tone === 'success' ? 'text-emerald-500' : 'text-slate-500 dark:text-slate-400')
+    }
+
+    const faDigits = (n) => String(n).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
+
+    const normalizePhone = (raw) => {
+      let s = String(raw || '').replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+      s = s.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+      s = s.replace(/[\s\-()]/g, '')
+      if (/^09\d{9}$/.test(s)) return s
+      if (/^\+989\d{9}$/.test(s)) return '0' + s.slice(3)
+      if (/^00989\d{9}$/.test(s)) return '0' + s.slice(4)
+      if (/^989\d{9}$/.test(s)) return '0' + s.slice(2)
+      return null
+    }
+
+    const stopTimers = () => {
+      clearInterval(otpTimer)
+      clearInterval(resendTimer)
+    }
+
+    const startCountdown = (seconds) => {
+      let left = seconds
+      const render = () => {
+        const m = String(Math.floor(left / 60)).padStart(2, '0')
+        const s = String(left % 60).padStart(2, '0')
+        if (countdownEl) countdownEl.textContent = faDigits(m + ':' + s)
+      }
+      render()
+      clearInterval(otpTimer)
+      otpTimer = setInterval(() => {
+        left -= 1
+        if (left <= 0) {
+          clearInterval(otpTimer)
+          if (countdownEl) countdownEl.textContent = '۰۰:۰۰'
+          if (resendBtn) resendBtn.disabled = false
+          return
+        }
+        render()
+      }, 1000)
+    }
+
+    const startResendCooldown = (seconds) => {
+      let left = seconds
+      const render = () => {
+        if (resendSeconds) resendSeconds.textContent = faDigits(left)
+      }
+      render()
+      if (resendBtn) resendBtn.disabled = true
+      clearInterval(resendTimer)
+      resendTimer = setInterval(() => {
+        left -= 1
+        if (left <= 0) {
+          clearInterval(resendTimer)
+          if (resendBtn) {
+            resendBtn.disabled = false
+            resendBtn.innerHTML = 'ارسال مجدد'
+          }
+          return
+        }
+        render()
+      }, 1000)
+    }
+
+    const goToVerify = (phone) => {
+      currentPhone = phone
+      if (phoneDisplay) phoneDisplay.textContent = phone
+      requestForm.classList.add('hidden')
+      verifyForm.classList.remove('hidden')
+      if (codeInput) {
+        codeInput.value = ''
+        codeInput.focus()
+      }
+      setMsg(msgVerify, '', 'info')
+    }
+
+    const goToRequest = () => {
+      stopTimers()
+      verifyForm.classList.add('hidden')
+      requestForm.classList.remove('hidden')
+      if (devBox) devBox.classList.add('hidden')
+      setMsg(msgVerify, '', 'info')
+    }
+
+    /* --- درخواست کد --- */
+    const requestOtp = async (isResend) => {
+      const phoneRaw = currentPhone || (document.getElementById('phone') || {}).value || ''
+      const phone = normalizePhone(phoneRaw)
+
+      if (!phone) {
+        setMsg(msgRequest, 'شمارهٔ موبایل معتبر نیست. نمونه: ۰۹۱۲۳۴۵۶۷۸۹', 'error')
+        return
+      }
+
+      const btn = requestForm.querySelector('button[type="submit"]')
+      if (btn) btn.disabled = true
+      setMsg(msgRequest, 'در حال ارسال کد…', 'info')
+
+      try {
+        const res = await fetch('/api/auth/otp/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone,
+            purpose,
+            name: nameInput && nameInput.value.trim() ? nameInput.value.trim() : undefined,
+          }),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.ok) {
+          if (data.error === 'rate_limited') {
+            setMsg(msgRequest, 'کد قبلی هنوز معتبر است. کمی بعد دوباره تلاش کن.', 'error')
+          } else if (data.error === 'invalid_phone') {
+            setMsg(msgRequest, 'شمارهٔ موبایل معتبر نیست.', 'error')
+          } else {
+            setMsg(msgRequest, 'ارسال کد با خطا مواجه شد. لطفاً دوباره تلاش کن.', 'error')
+          }
+          return
+        }
+
+        goToVerify(phone)
+        startCountdown(data.expiresInSec || 120)
+        startResendCooldown(data.retryAfterSec || 60)
+
+        if (data.devMode && data.devCode) {
+          if (devBox) devBox.classList.remove('hidden')
+          if (devCode) devCode.textContent = data.devCode
+        } else if (devBox) {
+          devBox.classList.add('hidden')
+        }
+
+        setMsg(msgVerify, isResend ? 'کد جدید ارسال شد.' : 'کد ورود برایت پیامک شد.', 'success')
+      } catch (err) {
+        setMsg(msgRequest, 'ارتباط با سرور برقرار نشد.', 'error')
+      } finally {
+        if (btn) btn.disabled = false
+      }
+    }
+
+    requestForm.addEventListener('submit', (e) => {
+      e.preventDefault()
+      requestOtp(false)
+    })
+
+    if (resendBtn) {
+      resendBtn.addEventListener('click', () => {
+        requestOtp(true)
+      })
+    }
+
+    if (editPhoneBtn) editPhoneBtn.addEventListener('click', goToRequest)
+    if (backBtn) backBtn.addEventListener('click', goToRequest)
+
+    /* فقط ارقام در ورودی کد */
+    if (codeInput) {
+      codeInput.addEventListener('input', () => {
+        codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6)
+        if (codeInput.value.length === 6) {
+          verifyForm.requestSubmit()
+        }
+      })
+    }
+
+    /* --- تأیید کد --- */
+    verifyForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const code = (codeInput ? codeInput.value : '').replace(/\D/g, '')
+
+      if (code.length !== 6) {
+        setMsg(msgVerify, 'کد ۶ رقمی را کامل وارد کن.', 'error')
+        return
+      }
+
+      const btn = verifyForm.querySelector('button[type="submit"]')
+      if (btn) btn.disabled = true
+      setMsg(msgVerify, 'در حال بررسی…', 'info')
+
+      try {
+        const res = await fetch('/api/auth/otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: currentPhone,
+            code,
+            name: nameInput && nameInput.value.trim() ? nameInput.value.trim() : undefined,
+          }),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.ok) {
+          const messages = {
+            invalid: 'کد وارد‌شده اشتباه است.',
+            expired: 'کد منقضی شده؛ دوباره درخواست کن.',
+            too_many_attempts: 'تلاش‌های زیاد. کد جدید بگیر.',
+            not_found: 'کد فعالی پیدا نشد. دوباره ارسال کن.',
+          }
+          setMsg(msgVerify, messages[data.error] || 'تأیید انجام نشد.', 'error')
+          return
+        }
+
+        setMsg(msgVerify, 'ورود موفق! در حال انتقال…', 'success')
+        stopTimers()
+        window.location.href = data.redirectTo || nextUrl || '/'
+      } catch (err) {
+        setMsg(msgVerify, 'ارتباط با سرور برقرار نشد.', 'error')
+      } finally {
+        if (btn) btn.disabled = false
+      }
+    })
+  }
 })()

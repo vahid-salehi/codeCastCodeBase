@@ -21,6 +21,20 @@ import {
 import { HomePage } from './pages/home'
 import { PathsPage, PathDetailPage, NotFoundPage } from './pages/paths'
 import { CoursesPage, CourseDetailPage } from './pages/courses'
+import { LoginPage, RegisterPage, AccountPage } from './pages/auth'
+import { sendOtpSms, normalizePhone, maskPhone } from './sms'
+import {
+  issueOtp,
+  verifyOtp,
+  createSession,
+  getUserBySession,
+  destroySession,
+  sessionCookie,
+  clearSessionCookie,
+  readSessionCookie,
+  constants as authConstants,
+} from './auth'
+import { getUserCourses, countUserSessions } from './data'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -117,7 +131,163 @@ app.post('/api/signup', async (c) => {
 })
 
 /* ------------------------------------------------------------------ */
-/*  صفحات                                                             */
+/*  API احراز هویت (OTP)                                             */
+/* ------------------------------------------------------------------ */
+
+/** آیا سرویس پیامک واقعی پیکربندی شده است؟ */
+const smsConfigured = (env: Bindings): boolean =>
+  env.SMS_PROVIDER === 'kavenegar'
+    ? !!env.KAVENEGAR_API_KEY
+    : env.SMS_PROVIDER === 'twilio'
+      ? !!env.TWILIO_ACCOUNT_SID && !!env.TWILIO_AUTH_TOKEN
+      : false
+
+app.post('/api/auth/otp/request', async (c) => {
+  let body: { phone?: string; purpose?: string; name?: string }
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json' }, 400)
+  }
+
+  const phone = normalizePhone(body.phone ?? '')
+  if (!phone) return c.json({ ok: false, error: 'invalid_phone' }, 400)
+
+  const purpose = body.purpose === 'register' ? 'register' : 'login'
+
+  try {
+    const issued = await issueOtp(c.env.DB, phone, purpose)
+    if (!issued.ok) {
+      return c.json(
+        { ok: false, error: issued.error, retryAfterSec: issued.retryAfterSec },
+        429
+      )
+    }
+
+    const sms = await sendOtpSms(c.env, phone, issued.code!)
+
+    return c.json({
+      ok: true,
+      devMode: sms.provider === 'dev',
+      devCode: sms.provider === 'dev' ? sms.devCode : undefined,
+      provider: sms.provider,
+      expiresInSec: issued.expiresInSec,
+      retryAfterSec: issued.retryAfterSec,
+      maskedPhone: maskPhone(phone),
+    })
+  } catch (err) {
+    console.error('[otp:request]', err)
+    return c.json({ ok: false, error: 'storage_unavailable' }, 503)
+  }
+})
+
+app.post('/api/auth/otp/verify', async (c) => {
+  let body: { phone?: string; code?: string; name?: string; next?: string }
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ ok: false, error: 'invalid_json' }, 400)
+  }
+
+  const phone = normalizePhone(body.phone ?? '')
+  const code = (body.code ?? '').replace(/\D/g, '')
+  if (!phone) return c.json({ ok: false, error: 'invalid_phone' }, 400)
+  if (code.length !== 6) return c.json({ ok: false, error: 'invalid_code_format' }, 400)
+
+  try {
+    const result = await verifyOtp(c.env.DB, phone, code, body.name)
+    if (!result.ok || !result.user) {
+      return c.json({ ok: false, error: result.error ?? 'invalid' }, 400)
+    }
+
+    const token = await createSession(c.env.DB, result.user.id)
+    c.header('Set-Cookie', sessionCookie(token))
+
+    return c.json({
+      ok: true,
+      redirectTo: body.next && body.next.startsWith('/') ? body.next : '/account',
+      user: { id: result.user.id, name: result.user.name, phone: result.user.phone },
+    })
+  } catch (err) {
+    console.error('[otp:verify]', err)
+    return c.json({ ok: false, error: 'storage_unavailable' }, 503)
+  }
+})
+
+app.post('/api/auth/logout', async (c) => {
+  const token = readSessionCookie(c.req.header('cookie'))
+  await safe(() => destroySession(c.env.DB, token), undefined)
+  c.header('Set-Cookie', clearSessionCookie())
+
+  const accept = c.req.header('accept') ?? ''
+  if (accept.includes('application/json')) return c.json({ ok: true })
+  return c.redirect('/')
+})
+
+app.get('/api/auth/me', async (c) => {
+  const token = readSessionCookie(c.req.header('cookie'))
+  const user = await safe(() => getUserBySession(c.env.DB, token), null)
+  if (!user) return c.json({ ok: false, error: 'unauthenticated' }, 401)
+  return c.json({ ok: true, user })
+})
+
+/** آمار عمومی برای نمایش حالت دمو */
+app.get('/api/auth/config', (c) =>
+  c.json({
+    ok: true,
+    smsConfigured: smsConfigured(c.env),
+    provider: (c.env.SMS_PROVIDER || 'dev').toLowerCase(),
+    otpTtlSec: authConstants.OTP_TTL_SEC,
+  })
+)
+
+/* ------------------------------------------------------------------ */
+/*  صفحات احراز هویت                                                  */
+/* ------------------------------------------------------------------ */
+
+const nextParam = (raw: string | undefined): string =>
+  raw && raw.startsWith('/') ? raw : '/account'
+
+app.get('/login', async (c) => {
+  const token = readSessionCookie(c.req.header('cookie'))
+  const user = await safe(() => getUserBySession(c.env.DB, token), null)
+  if (user) return c.redirect('/account')
+
+  return c.render(
+    <LoginPage path="/login" next={nextParam(c.req.query('next'))} devMode={!smsConfigured(c.env)} />,
+    { title: 'ورود | دِوکَست' }
+  )
+})
+
+app.get('/register', async (c) => {
+  const token = readSessionCookie(c.req.header('cookie'))
+  const user = await safe(() => getUserBySession(c.env.DB, token), null)
+  if (user) return c.redirect('/account')
+
+  return c.render(
+    <RegisterPage path="/register" next={nextParam(c.req.query('next'))} devMode={!smsConfigured(c.env)} />,
+    { title: 'ثبت‌نام | دِوکَست' }
+  )
+})
+
+app.get('/account', async (c) => {
+  const token = readSessionCookie(c.req.header('cookie'))
+  const user = await safe(() => getUserBySession(c.env.DB, token), null)
+
+  if (!user) return c.redirect('/login?next=/account')
+
+  const [courses, sessionsCount] = await Promise.all([
+    safe(() => getUserCourses(c.env.DB), []),
+    safe(() => countUserSessions(c.env.DB, user.id), 1),
+  ])
+
+  return c.render(<AccountPage path="/account" user={user} courses={courses} sessionsCount={sessionsCount} />, {
+    title: `${user.name ?? 'حساب من'} | دِوکَست`,
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/*  صفحات عمومی                                                       */
 /* ------------------------------------------------------------------ */
 
 app.get('/', async (c) => {

@@ -16,6 +16,7 @@ export type PathRow = {
   level: string | null
   featured: number
   sort_order: number
+  image: string | null
 }
 
 export type Path = PathRow & { skills: string[] }
@@ -42,6 +43,7 @@ export type CourseRow = {
   price: number
   instructor: string | null
   accent: string | null
+  cover: string | null
 }
 
 export type Course = CourseRow & { path_slug?: string | null; path_title?: string | null }
@@ -205,6 +207,34 @@ export async function createSignup(
 
   const total = await db.prepare('SELECT COUNT(*) AS c FROM signups').first<{ c: number }>()
   return { ok: true, duplicate: false, total: total?.c ?? 0 }
+}
+
+/* ------------------------------------------------------------------ */
+/*  حساب کاربری                                                       */
+/* ------------------------------------------------------------------ */
+
+export type UserCourse = {
+  title: string
+  slug: string
+  cover: string | null
+  hours: number
+}
+
+/** دوره‌های در دسترس کاربر (در این نسخه: همهٔ دوره‌ها) */
+export async function getUserCourses(db: D1Database, limit = 6): Promise<UserCourse[]> {
+  const { results } = await db
+    .prepare('SELECT title, slug, cover, hours FROM courses ORDER BY id ASC LIMIT ?')
+    .bind(limit)
+    .all<UserCourse>()
+  return results ?? []
+}
+
+export async function countUserSessions(db: D1Database, userId: number): Promise<number> {
+  const row = await db
+    .prepare('SELECT COUNT(*) AS c FROM sessions WHERE user_id = ?')
+    .bind(userId)
+    .first<{ c: number }>()
+  return row?.c ?? 0
 }
 
 /* ------------------------------------------------------------------ */
