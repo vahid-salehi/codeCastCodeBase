@@ -95,24 +95,63 @@
     counters.forEach((el) => (el.textContent = faNum(el.dataset.count)))
   }
 
-  /* ---------- ۵. فرم ثبت‌نام ---------- */
+  /* ---------- ۵. فرم ثبت‌نام (متصل به /api/signup) ---------- */
   const form = document.getElementById('signup-form')
   const msg = document.getElementById('form-msg')
   if (form && msg) {
-    form.addEventListener('submit', function (e) {
+    const setMsg = (text, tone) => {
+      msg.textContent = text
+      msg.className =
+        'mt-3 min-h-[1.25rem] text-xs font-medium ' + (tone === 'error' ? 'text-red-400' : 'text-emerald-400')
+    }
+
+    form.addEventListener('submit', async function (e) {
       e.preventDefault()
       const input = document.getElementById('email')
+      const button = form.querySelector('button[type="submit"]')
       const value = input ? input.value.trim() : ''
       const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
       if (!valid) {
-        msg.textContent = 'لطفاً یک ایمیل معتبر وارد کن.'
-        msg.className = 'mt-3 min-h-[1.25rem] text-xs font-medium text-red-400'
+        setMsg('لطفاً یک ایمیل معتبر وارد کن.', 'error')
         return
       }
-      msg.textContent = 'ثبت شد! لینک شروع به ایمیلت ارسال می‌شود. ✅'
-      msg.className = 'mt-3 min-h-[1.25rem] text-xs font-medium text-emerald-400'
-      form.reset()
+
+      setMsg('در حال ثبت…', 'success')
+      if (button) button.disabled = true
+
+      try {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: value, source: 'landing' }),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.ok) {
+          if (data.error === 'invalid_email') setMsg('ایمیل وارد‌شده معتبر نیست.', 'error')
+          else setMsg('ثبت انجام نشد. لطفاً کمی بعد دوباره تلاش کن.', 'error')
+          return
+        }
+
+        setMsg(
+          data.duplicate
+            ? 'این ایمیل قبلاً ثبت شده بود؛ لینک شروع برایت ارسال می‌شود. ✅'
+            : 'ثبت شد! لینک شروع به ایمیلت ارسال می‌شود. ✅',
+          'success'
+        )
+
+        const counter = document.querySelector('[data-signup-count]')
+        if (counter && typeof data.total === 'number') {
+          counter.textContent = Number(12480 + data.total).toLocaleString('fa-IR')
+        }
+
+        form.reset()
+      } catch (err) {
+        setMsg('ارتباط با سرور برقرار نشد. اتصال اینترنتت را بررسی کن.', 'error')
+      } finally {
+        if (button) button.disabled = false
+      }
     })
   }
 
