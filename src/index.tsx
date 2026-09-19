@@ -46,6 +46,21 @@ app.use(renderer)
 app.use('/api/*', cors())
 
 /* ------------------------------------------------------------------ */
+/*  جلوگیری از کش‌شدن صفحات HTML توسط مرورگر                          */
+/*  (بدون این هدر، مرورگر نسخهٔ قدیمی صفحه را نشان می‌دهد)            */
+/* ------------------------------------------------------------------ */
+
+app.use('*', async (c, next) => {
+  await next()
+  const contentType = c.res.headers.get('Content-Type') ?? ''
+  if (contentType.includes('text/html')) {
+    c.res.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    c.res.headers.set('Pragma', 'no-cache')
+    c.res.headers.set('Expires', '0')
+  }
+})
+
+/* ------------------------------------------------------------------ */
 /*  کمک‌کننده‌های امن (در صورت خطای پایگاه‌داده)                        */
 /* ------------------------------------------------------------------ */
 

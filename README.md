@@ -81,6 +81,11 @@ curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/otp/verify \
 - کلیک روی دکمهٔ پخش جلسات پیش‌نمایش → باز شدن **مودال** (`#lesson-modal`) با عنوان جلسه و پلیر؛ بستن با Esc یا دکمه.
 - همهٔ ویدیوها با `preload="none"` و پوستر شروع می‌شوند (بدون دانلود اولیه).
 
+**پایداری نمایش (رفع اشکال‌های انجام‌شده):**
+- **بدون جاوااسکریپت هم محتوا دیده می‌شود:** انیمیشن ظاهر شدن فقط وقتی اعمال می‌شود که کلاس `.js` روی `<html>` باشد و این کلاس با یک اسکریپت کوچک در `<head>` اضافه می‌شود. پس اگر JS دیر برسد یا اجرا نشود، هیچ بخشی با `opacity: 0` پنهان نمی‌ماند.
+- **بدون صفحهٔ کش‌شده:** همهٔ پاسخ‌های HTML با هدر `Cache-Control: no-cache, no-store, must-revalidate` ارسال می‌شوند تا مرورگر نسخهٔ قدیمی را نشان ندهد.
+- **همهٔ ۶ دوره کامل‌اند:** هر دوره ۷ جلسه دارد و هر دوره حداقل ۳ ویدیوی پیش‌نمایش رایگان (فایل `seed_lessons.sql`).
+
 ## احراز هویت با OTP پیامکی
 
 ### جریان کار
@@ -170,9 +175,10 @@ migrations/
 ├── 0001_initial_schema.sql
 ├── 0002_auth_and_images.sql
 └── 0003_instructors_and_videos.sql   # جدول مدرسان + ستون‌های ویدیو
-seed.sql                       # داده‌های نمونه
+seed.sql                       # داده‌های نمونه (مسیرها، دوره‌ها، سرفصل‌ها)
 seed_media.sql                 # تصاویر جلد مسیرها و دوره‌ها
-seed_instructors.sql           # مدرسان + اتصال به دوره‌ها + ویدیوها
+seed_instructors.sql           # مدرسان + اتصال به دوره‌ها + ویدیوی معرفی
+seed_lessons.sql               # سرفصل و ویدیوی نمونه برای هر ۶ دوره
 public/static/
 ├── app.js                 # دارک‌مود، reveal، شمارنده، منو، فرم‌ها، OTP، پلیر ویدیو، مودال جلسه
 ├── style.css              # استایل‌های سفارشی
@@ -183,9 +189,7 @@ public/static/
 ```bash
 npm run build                       # ساخت پروژه
 npm run db:migrate:local            # اجرای مهاجرت‌های D1 (محلی)
-npm run db:seed                     # درج داده‌های نمونه
-npx wrangler d1 execute webapp-production --local --file=./seed_media.sql
-npx wrangler d1 execute webapp-production --local --file=./seed_instructors.sql
+npm run db:seed:all                 # همهٔ داده‌های نمونه (پایه + تصاویر + مدرسان + جلسات)
 pm2 start ecosystem.config.cjs      # اجرای سرویس روی پورت 3000
 npm run db:reset                    # بازنشانی کامل پایگاه‌داده محلی
 pm2 logs webapp --nostream          # مشاهدهٔ لاگ

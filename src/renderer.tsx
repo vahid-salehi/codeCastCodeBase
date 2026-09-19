@@ -38,6 +38,13 @@ export const renderer = jsxRenderer(({ children, title }) => {
         />
 
         <link href="/static/style.css" rel="stylesheet" />
+
+        {/* علامت‌گذاری JS: تا وقتی اسکریپت اجرا نشده، محتوا پنهان نمیشود */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('js');",
+          }}
+        />
       </head>
       <body class="bg-white text-slate-800 antialiased selection:bg-indigo-500/20 dark:bg-[#0a0a0f] dark:text-slate-200">
         {children}
