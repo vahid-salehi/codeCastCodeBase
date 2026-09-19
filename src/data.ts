@@ -44,6 +44,11 @@ export type CourseRow = {
   instructor: string | null
   accent: string | null
   cover: string | null
+  instructor_slug: string | null
+  intro_video: string | null
+  preview_note: string | null
+  languages: number
+  projects: number
 }
 
 export type Course = CourseRow & { path_slug?: string | null; path_title?: string | null }
@@ -52,6 +57,26 @@ export type Lesson = {
   lesson_no: number
   title: string
   minutes: number
+  video: string | null
+  is_preview: number
+}
+
+export type Instructor = {
+  id: number
+  slug: string
+  name: string
+  title: string | null
+  company: string | null
+  bio: string | null
+  avatar: string | null
+  video: string | null
+  years: number
+  students_count: number
+  rating: number
+  courses_count: number
+  linkedin: string | null
+  github: string | null
+  accent: string | null
 }
 
 export type Stats = {
@@ -142,9 +167,23 @@ export async function getCourseBySlug(db: D1Database, slug: string): Promise<Cou
 
 export async function getCourseLessons(db: D1Database, courseId: number): Promise<Lesson[]> {
   const { results } = await db
-    .prepare('SELECT lesson_no, title, minutes FROM course_lessons WHERE course_id = ? ORDER BY lesson_no ASC')
+    .prepare(
+      'SELECT lesson_no, title, minutes, video, is_preview FROM course_lessons WHERE course_id = ? ORDER BY lesson_no ASC'
+    )
     .bind(courseId)
     .all<Lesson>()
+  return results ?? []
+}
+
+export async function getInstructorBySlug(db: D1Database, slug: string): Promise<Instructor | null> {
+  return await db.prepare('SELECT * FROM instructors WHERE slug = ?').bind(slug).first<Instructor>()
+}
+
+export async function getCoursesByInstructor(db: D1Database, slug: string, excludeId?: number): Promise<Course[]> {
+  const { results } = await db
+    .prepare('SELECT * FROM courses WHERE instructor_slug = ? AND id != ? ORDER BY students DESC LIMIT 3')
+    .bind(slug, excludeId ?? 0)
+    .all<Course>()
   return results ?? []
 }
 

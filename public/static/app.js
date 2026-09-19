@@ -398,4 +398,73 @@
       }
     })
   }
+  /* ---------- ۸. پخش‌کنندهٔ ویدیو ---------- */
+  const activateVideo = (figure, src) => {
+    const el = figure.querySelector('.video-el')
+    const poster = figure.querySelector('.video-poster')
+    if (!el) return
+
+    if (!el.getAttribute('src')) el.setAttribute('src', src)
+    el.classList.remove('hidden')
+    if (poster) poster.classList.add('hidden')
+
+    const play = el.play()
+    if (play && typeof play.catch === 'function') play.catch(() => {})
+  }
+
+  document.querySelectorAll('.video-poster').forEach((poster) => {
+    const figure = poster.closest('figure')
+    const src = poster.dataset.videoSrc
+    if (!figure || !src) return
+
+    const open = () => activateVideo(figure, src)
+    poster.addEventListener('click', open)
+    poster.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        open()
+      }
+    })
+  })
+
+  /* ---------- ۹. پخش درون‌خطی جلسات (مودال) ---------- */
+  const modal = document.getElementById('lesson-modal')
+  if (modal) {
+    const modalVideo = modal.querySelector('video')
+    const modalTitle = modal.querySelector('[data-modal-title]')
+
+    const closeModal = () => {
+      modal.classList.add('hidden')
+      modal.classList.remove('flex')
+      if (modalVideo) {
+        modalVideo.pause()
+        modalVideo.removeAttribute('src')
+        modalVideo.load()
+      }
+      document.body.style.overflow = ''
+    }
+
+    const openModal = (src, title, poster) => {
+      if (!modalVideo) return
+      if (modalTitle) modalTitle.textContent = title || 'پیش‌نمایش جلسه'
+      if (poster) modalVideo.setAttribute('poster', poster)
+      modalVideo.setAttribute('src', src)
+      modal.classList.remove('hidden')
+      modal.classList.add('flex')
+      document.body.style.overflow = 'hidden'
+      const play = modalVideo.play()
+      if (play && typeof play.catch === 'function') play.catch(() => {})
+    }
+
+    document.querySelectorAll('.video-inline-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openModal(btn.dataset.videoSrc, btn.dataset.lessonTitle, btn.dataset.videoPoster)
+      })
+    })
+
+    modal.querySelectorAll('[data-modal-close]').forEach((el) => el.addEventListener('click', closeModal))
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal()
+    })
+  }
 })()

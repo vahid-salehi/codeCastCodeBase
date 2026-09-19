@@ -1,6 +1,6 @@
 # دِوکَست — آکادمی برنامه‌نویسی
 
-وب‌سایت آموزش برنامه‌نویسی با لندینگ حرفه‌ای، **صفحات داخلی مسیرها و دوره‌ها**، **احراز هویت با OTP پیامکی** و **ذخیره‌سازی روی Cloudflare D1**.
+وب‌سایت آموزش برنامه‌نویسی با لندینگ حرفه‌ای، **صفحات داخلی مسیرها و دوره‌ها**، **صفحهٔ دوره با ویدیو و مدرس**، **احراز هویت با OTP پیامکی** و **ذخیره‌سازی روی Cloudflare D1**.
 ساخته‌شده با **Hono + Cloudflare Pages + Cloudflare D1 + Tailwind CSS**.
 
 ## نمای کلی پروژه
@@ -10,8 +10,9 @@
   - طراحی مینیمال، RTL و فارسی با فونت Vazirmatn + حالت روشن/تاریک
   - **المان‌های گرافیکی مدرن**: موج‌های منحنی SVG، بلاب‌های گرادیانی، شبکهٔ نقطه‌چین، حلقه‌های تزئینی، پنجرهٔ کد متحرک
   - **تصاویر جلد** برای همهٔ مسیرها و دوره‌ها (با فیلتر گرادیانی و افکت زوم)
-  - صفحات فهرست و جزئیات مسیرهای یادگیری (نقشه‌ی راه مرحله‌به‌مرحله)
-  - صفحات فهرست و جزئیات دوره‌ها (سرفصل‌ها، فیلتر بر اساس مسیر)
+  - **صفحهٔ اختصاصی دوره** با: هدر گرافیکی گرادیانی، **ویدیوی معرفی دوره**، **نمونه‌ویدیوی جلسات** (پیش‌نمایش رایگان)، سرفصل کامل، **بخش معرفی مدرس** و **ویدیوی صحبت مدرس**
+  - **صفحهٔ پروفایل مدرس** (`/instructors/:slug`) با آمار، بیو، ویدیو و دوره‌های دیگر
+  - **بخش‌های مجزا با بک‌گراند گرادیان متفاوت** (معرفی دوره، جلسات نمونه، مدرس، CTA)
   - **ورود و ثبت‌نام با OTP پیامکی** (کد ۶ رقمی، شمارش معکوس، ارسال مجدد، محدودیت نرخ)
   - **صفحهٔ حساب کاربری** با نمایش دوره‌ها و آمار
   - فرم ثبت‌نام ایمیلی در لندینگ (متصل به D1)
@@ -29,7 +30,8 @@
 | GET | `/paths` | فهرست همهٔ مسیرهای یادگیری | — |
 | GET | `/paths/:slug` | جزئیات مسیر + نقشه‌ی راه + دوره‌های مرتبط | `slug` مثل `frontend` |
 | GET | `/courses` | فهرست دوره‌ها | `?path=<slug>` برای فیلتر |
-| GET | `/courses/:slug` | جزئیات دوره + سرفصل‌ها + دوره‌های مرتبط | `slug` مثل `js-modern` |
+| GET | `/courses/:slug` | جزئیات دوره + ویدیوها + سرفصل + مدرس + مرتبط‌ها | `slug` مثل `js-modern` |
+| GET | `/instructors/:slug` | پروفایل مدرس + دوره‌های او | `slug` مثل `sara-mohammadi` |
 | GET | `/login` | ورود با OTP پیامکی | `?next=/path` |
 | GET | `/register` | ثبت‌نام با OTP پیامکی | `?next=/path` |
 | GET | `/account` | حساب کاربری (نیازمند ورود) | — |
@@ -61,6 +63,23 @@ curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/otp/verify \
   -H 'Content-Type: application/json' \
   -d '{"phone":"09123456789","code":"123456"}'
 ```
+
+## تجربهٔ صفحهٔ دوره (UI و ویدیو)
+
+صفحهٔ `/courses/:slug` از بخش‌های زیر ساخته شده که هرکدام بک‌گراند و رنگ‌بندی خودشان را دارند:
+
+1. **هدر گرافیکی (Hero)** — گرادیان اختصاصی هر دوره + تصویر جلد با شفافیت ۱۳–۱۸٪ + بلاب‌های نوری + خطوط منحنی SVG + شبکهٔ نقطه‌چین. شامل بردکرامب، برچسب‌های متا (تعداد درس/پروژه/سطح/زبان) و کارت شیشه‌ای چسبانِ ثبت‌نام با تصویر جلد، قیمت، تخفیف ۳۰٪، فهرست مزایا و مینی‌کارت مدرس.
+2. **ویدیوی معرفی دوره** (`#intro-video`) — بخش گرادیانی با نشان «ویدیوی معرفی دوره» و پلیر بزرگ (پوستر + دکمهٔ پخش پالس‌دار).
+3. **دربارهٔ این دوره** — توضیح دوره + چک‌لیست «در پایان این دوره می‌توانی».
+4. **نمونه‌ویدیوی جلسات** (`#lessons-preview`) — بک‌گراند گرادیان **ایندیگو → ویولت**، با پیام «قبل از ثبت‌نام ببین» و کارت‌های `LessonVideoCard` برای جلسات پیش‌نمایش.
+5. **سرفصل کامل دوره** (`#curriculum`) — لیست همهٔ جلسات؛ جلسات پیش‌نمایش دکمهٔ پخش + نشان «رایگان» و بقیه آیکون قفل دارند.
+6. **بخش مدرس** (`#instructor`) — بک‌گراند گرادیان **ویولت → ایندیگو**، ویدیوی صحبت مدرس، سه آمار کلیدی، بیو، لینک‌های شبکه‌های اجتماعی و دوره‌های دیگر همان مدرس.
+7. **دوره‌های مرتبط** و **CTA پایانی** با گرادیان تیره.
+
+**رفتار کلاینت:**
+- کلیک روی پوستر ویدیو (`data-video-src`) → پخش درون‌جای همان کارت.
+- کلیک روی دکمهٔ پخش جلسات پیش‌نمایش → باز شدن **مودال** (`#lesson-modal`) با عنوان جلسه و پلیر؛ بستن با Esc یا دکمه.
+- همهٔ ویدیوها با `preload="none"` و پوستر شروع می‌شوند (بدون دانلود اولیه).
 
 ## احراز هویت با OTP پیامکی
 
@@ -108,8 +127,9 @@ TWILIO_FROM=<شماره فرستنده>
   - `paths` — مسیرهای یادگیری (+ `image` جلد)
   - `path_skills` — مهارت‌های هر مسیر
   - `path_steps` — مراحل نقشه‌ی راه هر مسیر
-  - `courses` — دوره‌ها (+ `cover` جلد، مرتبط با مسیر)
-  - `course_lessons` — سرفصل‌های هر دوره
+  - `courses` — دوره‌ها (+ `cover`، `instructor_slug`، `intro_video`، `preview_note`، `languages`، `projects`)
+  - `course_lessons` — سرفصل‌های هر دوره (+ `video`، `is_preview`)
+  - `instructors` — مدرسان (نام، عنوان، شرکت، بیو، آواتار، ویدیو، امتیاز، شبکه‌های اجتماعی)
   - `signups` — ایمیل‌های ثبت‌نام‌شده در لندینگ
   - `users` — کاربران (phone یکتا، نام، نقش، تاریخ عضویت)
   - `otp_codes` — کدهای یک‌بارمصرف (هش، تلاش‌ها، انقضا)
@@ -119,9 +139,11 @@ TWILIO_FROM=<شماره فرستنده>
 ## راهنمای کاربر
 1. در صفحهٔ اصلی یکی از مسیرهای یادگیری را انتخاب کنید و نقشهٔ راه را ببینید.
 2. از بخش «دوره‌ها» با فیلتر مسیر، دورهٔ مناسب را پیدا کنید و صفحهٔ جزئیات آن را باز کنید.
-3. برای ساخت حساب، «ثبت‌نام» را بزنید، نام و شمارهٔ موبایل را وارد کنید و کد ۶ رقمی پیامک‌شده را تأیید کنید.
+3. در صفحهٔ دوره، **ویدیوی معرفی** را ببینید و از بخش «چند جلسه را ببین» چند **ویدیوی نمونهٔ رایگان** را پخش کنید تا با سبک تدریس آشنا شوید.
+4. برای آشنایی با استاد، بخش «دربارهٔ مدرس» را ببینید یا روی نام مدرس کلیک کنید تا **صفحهٔ پروفایل مدرس** باز شود.
+5. برای ساخت حساب، «ثبت‌نام» را بزنید، نام و شمارهٔ موبایل را وارد کنید و کد ۶ رقمی پیامک‌شده را تأیید کنید.
    - در حالت دمو، کد آزمایشی داخل کادر زردرنگ روی صفحه نمایش داده می‌شود.
-4. پس از ورود، در صفحهٔ «حساب من» دوره‌ها و اطلاعات حساب را ببینید.
+6. پس از ورود، در صفحهٔ «حساب من» دوره‌ها و اطلاعات حساب را ببینید.
 
 ## ساختار پروژه
 ```
@@ -135,19 +157,24 @@ src/
 ├── components/
 │   ├── icons.tsx          # آیکون‌های SVG
 │   ├── art.tsx            # المان‌های گرافیکی (موج، بلاب، نقطه‌چین، پنجره کد)
-│   └── layout.tsx         # Nav (با وضعیت ورود)، Footer، Breadcrumbs، PageShell
+│   ├── video.tsx          # VideoPlayer و LessonVideoCard
+│   ├── instructor.tsx     # InstructorMini و InstructorSection
+│   └── layout.tsx         # Nav (با وضعیت ورود)، Footer، Breadcrumbs، PageShell (+ مودال ویدیو)
 └── pages/
     ├── home.tsx           # لندینگ اصلی
     ├── paths.tsx          # /paths و /paths/:slug (+ PathCard، CourseCard، 404)
-    ├── courses.tsx        # /courses و /courses/:slug
+    ├── courses.tsx        # /courses و /courses/:slug (صفحهٔ کامل دوره)
+    ├── instructor.tsx     # /instructors/:slug (پروفایل مدرس)
     └── auth.tsx           # /login، /register، /account
 migrations/
 ├── 0001_initial_schema.sql
-└── 0002_auth_and_images.sql
+├── 0002_auth_and_images.sql
+└── 0003_instructors_and_videos.sql   # جدول مدرسان + ستون‌های ویدیو
 seed.sql                       # داده‌های نمونه
 seed_media.sql                 # تصاویر جلد مسیرها و دوره‌ها
+seed_instructors.sql           # مدرسان + اتصال به دوره‌ها + ویدیوها
 public/static/
-├── app.js                 # دارک‌مود، reveal، شمارنده، منو، فرم‌ها، جریان OTP
+├── app.js                 # دارک‌مود، reveal، شمارنده، منو، فرم‌ها، OTP، پلیر ویدیو، مودال جلسه
 ├── style.css              # استایل‌های سفارشی
 └── tailwind.config.js     # تنظیمات Tailwind CDN
 ```
@@ -157,7 +184,8 @@ public/static/
 npm run build                       # ساخت پروژه
 npm run db:migrate:local            # اجرای مهاجرت‌های D1 (محلی)
 npm run db:seed                     # درج داده‌های نمونه
-wrangler d1 execute webapp-production --local --file=./seed_media.sql   # تصاویر
+npx wrangler d1 execute webapp-production --local --file=./seed_media.sql
+npx wrangler d1 execute webapp-production --local --file=./seed_instructors.sql
 pm2 start ecosystem.config.cjs      # اجرای سرویس روی پورت 3000
 npm run db:reset                    # بازنشانی کامل پایگاه‌داده محلی
 pm2 logs webapp --nostream          # مشاهدهٔ لاگ
@@ -173,6 +201,7 @@ pm2 logs webapp --nostream          # مشاهدهٔ لاگ
   npx wrangler d1 migrations apply webapp-production
   npx wrangler d1 execute webapp-production --file=./seed.sql
   npx wrangler d1 execute webapp-production --file=./seed_media.sql
+  npx wrangler d1 execute webapp-production --file=./seed_instructors.sql
   npx wrangler secret put KAVENEGAR_API_KEY          # برای پیامک واقعی
   npm run deploy
   ```
@@ -180,107 +209,8 @@ pm2 logs webapp --nostream          # مشاهدهٔ لاگ
 
 ## مراحل بعدی پیشنهادی
 - ثبت‌نام واقعی کاربر در دوره و پیگیری پیشرفت در صفحهٔ حساب
+- پخش ویدیو از R2/Stream به‌جای نمونه‌های عمومی و پشتیبانی از زیرنویس فارسی
 - جست‌وجو و مرتب‌سازی پیشرفته در دوره‌ها
-- صفحهٔ پروفایل مدرس و نظرات دوره‌ها
+- نظرات و امتیازدهی کاربران به دوره و مدرس
 - خروج از همهٔ نشست‌ها و ورود دو مرحله‌ای برای عملیات حساس
 - اتصال ایمیل تراکنشی (Resend/SendGrid) برای خوش‌آمدگویی
-
-
-## URLs
-- **پیش‌نمایش زنده (demo)**: https://3000-i6w0yyeexwx6uzs3s8y4w-8f57ffe2.sandbox.novita.ai
-- **محلی**: http://localhost:3000
-
-## صفحه‌ها و مسیرهای عملکردی (Routes)
-
-| متد | مسیر | توضیح | پارامترها |
-|---|---|---|---|
-| GET | `/` | لندینگ‌پیج اصلی | — |
-| GET | `/paths` | فهرست همهٔ مسیرهای یادگیری | — |
-| GET | `/paths/:slug` | جزئیات مسیر + نقشه‌ی راه + دوره‌های مرتبط | `slug` مثل `frontend` |
-| GET | `/courses` | فهرست دوره‌ها | `?path=<slug>` برای فیلتر |
-| GET | `/courses/:slug` | جزئیات دوره + سرفصل‌ها + دوره‌های مرتبط | `slug` مثل `js-modern` |
-| GET | `/api/health` | بررسی سلامت سرویس | — |
-| GET | `/api/stats` | آمار مسیرها/دوره‌ها/دانشجوها/ثبت‌نام‌ها | — |
-| GET | `/api/paths` | JSON همهٔ مسیرها | — |
-| GET | `/api/paths/:slug` | JSON یک مسیر + مراحل + دوره‌ها | `slug` |
-| GET | `/api/courses` | JSON همهٔ دوره‌ها | `?path=<slug>` |
-| GET | `/api/courses/:slug` | JSON یک دوره + سرفصل‌ها + مرتبط‌ها | `slug` |
-| POST | `/api/signup` | ثبت ایمیل | body: `{ "email": "...", "source": "landing" }` |
-
-### نمونهٔ فراخوانی API
-```bash
-curl -s http://localhost:3000/api/stats
-curl -s "http://localhost:3000/api/courses?path=backend"
-curl -s -X POST http://localhost:3000/api/signup \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"you@example.com"}'
-```
-
-## معماری داده
-- **سرویس ذخیره‌سازی**: Cloudflare **D1** (SQLite توزیع‌شده).
-- **مدل داده** (جدول‌های D1):
-  - `paths` — مسیرهای یادگیری (slug، عنوان، خلاصه، توضیح، آیکون، مدت، سطح)
-  - `path_skills` — مهارت‌های هر مسیر
-  - `path_steps` — مراحل نقشه‌ی راه هر مسیر
-  - `courses` — دوره‌ها (مرتبط با مسیر، قیمت، امتیاز، دانشجو، مدرس)
-  - `course_lessons` — سرفصل‌های هر دوره
-  - `signups` — ایمیل‌های ثبت‌نام‌شده (با UNIQUE روی ایمیل)
-- **جریان داده**: درخواست → Hono → `src/data.ts` → D1 → رندر JSX. در صورت خطای D1، داده‌ی جایگزین (fallback) نمایش داده می‌شود تا صفحه هرگز خراب نشود.
-
-## راهنمای کاربر
-1. در صفحهٔ اصلی بین مسیرهای یادگیری یک گزینه را انتخاب کنید.
-2. وارد صفحهٔ مسیر شوید و نقشه‌ی راه و دوره‌های آن را ببینید.
-3. از بخش «دوره‌ها» می‌توانید با فیلتر مسیر، دورهٔ مناسب را پیدا کنید.
-4. در پایین صفحهٔ اصلی، ایمیل خود را وارد کرده و ثبت‌نام رایگان کنید (در D1 ذخیره می‌شود).
-
-## ساختار پروژه
-```
-src/
-├── index.tsx              # روت‌ها (صفحات + API) و مدیریت خطا
-├── renderer.tsx           # قالب HTML (فونت، Tailwind، آیکون، favicon)
-├── data.ts                # لایهٔ دسترسی به D1 + توابع کمکی
-├── types.ts               # تایپ‌های D1Database / Bindings
-├── components/
-│   ├── icons.tsx          # آیکون‌های SVG
-│   └── layout.tsx         # Nav، Footer، Breadcrumbs، PageShell، Badge
-└── pages/
-    ├── home.tsx           # لندینگ اصلی
-    ├── paths.tsx          # /paths و /paths/:slug (+ PathCard، CourseCard، 404)
-    └── courses.tsx        # /courses و /courses/:slug
-migrations/
-└── 0001_initial_schema.sql   # اسکیمای D1
-seed.sql                      # داده‌های نمونه
-public/static/
-├── app.js                 # دارک‌مود، reveal، شمارنده، منو، فرم→API
-├── style.css              # استایل‌های سفارشی
-└── tailwind.config.js     # تنظیمات Tailwind CDN
-```
-
-## توسعهٔ محلی
-```bash
-npm run build                       # ساخت پروژه
-npm run db:migrate:local            # اجرای مهاجرت‌های D1 (محلی)
-npm run db:seed                     # درج داده‌های نمونه
-pm2 start ecosystem.config.cjs      # اجرای سرویس روی پورت 3000
-npm run db:reset                    # بازنشانی کامل پایگاه‌داده محلی
-pm2 logs webapp --nostream          # مشاهدهٔ لاگ
-```
-
-## استقرار
-- **پلتفرم**: Cloudflare Pages + D1
-- **وضعیت**: ✅ فعال (پیش‌نمایش sandbox با D1 محلی)
-- **پشتهٔ فناوری**: Hono + TypeScript + Cloudflare D1 + Tailwind CSS (CDN)
-- **نکتهٔ استقرار تولید**: قبل از `deploy`، شناسهٔ واقعی D1 را جایگزین `database_id` در `wrangler.jsonc` کنید و مهاجرت را روی محیط تولید اجرا کنید:
-  ```bash
-  npx wrangler d1 create webapp-production
-  npx wrangler d1 migrations apply webapp-production
-  npx wrangler d1 execute webapp-production --file=./seed.sql
-  npm run deploy
-  ```
-- **آخرین به‌روزرسانی**: ۱۴۰۴
-
-## مراحل بعدی پیشنهادی
-- افزودن احراز هویت کاربران و داشبورد پیشرفت
-- جست‌وجو و مرتب‌سازی پیشرفته در دوره‌ها
-- صفحهٔ پروفایل مدرس و نظرات دوره‌ها
-- اتصال ثبت‌نام به سرویس ایمیل (Resend/SendGrid) برای ارسال لینک شروع

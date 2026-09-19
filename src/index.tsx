@@ -10,18 +10,22 @@ import {
   getCourseBySlug,
   getCourseLessons,
   getRelatedCourses,
+  getInstructorBySlug,
+  getCoursesByInstructor,
   getStats,
   createSignup,
   type Path,
   type Course,
   type PathStep,
   type Lesson,
+  type Instructor,
   type Stats,
 } from './data'
 import { HomePage } from './pages/home'
 import { PathsPage, PathDetailPage, NotFoundPage } from './pages/paths'
 import { CoursesPage, CourseDetailPage } from './pages/courses'
 import { LoginPage, RegisterPage, AccountPage } from './pages/auth'
+import { InstructorPage } from './pages/instructor'
 import { sendOtpSms, normalizePhone, maskPhone } from './sms'
 import {
   issueOtp,
@@ -350,13 +354,49 @@ app.get('/courses/:slug', async (c) => {
     return c.render(<NotFoundPage path="/courses" message="دوره‌ای با این آدرس پیدا نشد." />, { title: 'پیدا نشد | دِوکَست' })
   }
 
-  const [lessons, related] = await Promise.all([
+  const [lessons, related, instructor] = await Promise.all([
     safe(() => getCourseLessons(c.env.DB, found.id), [] as Lesson[]),
     safe(() => getRelatedCourses(c.env.DB, found.path_id, found.id), [] as Course[]),
+    found.instructor_slug
+      ? safe(() => getInstructorBySlug(c.env.DB, found.instructor_slug!), null)
+      : Promise.resolve(null),
   ])
 
-  return c.render(<CourseDetailPage path="/courses" course={found} lessons={lessons} related={related} found />, {
-    title: `${found.title} | دِوکَست`,
+  const instructorCourses = instructor
+    ? await safe(() => getCoursesByInstructor(c.env.DB, instructor.slug, found.id), [] as Course[])
+    : []
+
+  return c.render(
+    <CourseDetailPage
+      path="/courses"
+      course={found}
+      lessons={lessons}
+      related={related}
+      instructor={instructor}
+      instructorCourses={instructorCourses}
+      found
+    />,
+    {
+      title: `${found.title} | دِوکَست`,
+    }
+  )
+})
+
+app.get('/instructors/:slug', async (c) => {
+  const slug = c.req.param('slug')
+  const instructor = await safe(() => getInstructorBySlug(c.env.DB, slug), null)
+
+  if (!instructor) {
+    c.status(404)
+    return c.render(<NotFoundPage path="/courses" message="مدرسی با این آدرس پیدا نشد." />, {
+      title: 'پیدا نشد | دِوکَست',
+    })
+  }
+
+  const courses = await safe(() => getCoursesByInstructor(c.env.DB, slug), [] as Course[])
+
+  return c.render(<InstructorPage path="/courses" instructor={instructor} courses={courses} />, {
+    title: `${instructor.name} | مدرس دِوکَست`,
   })
 })
 

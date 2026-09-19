@@ -204,6 +204,33 @@ export const PageShell: FC<{ path: string; user?: { name: string | null; phone: 
     <Nav path={path} user={user} />
     <main id="main">{children}</main>
     <Footer />
+
+    {/* مودال پخش ویدیوی جلسات */}
+    <div
+      id="lesson-modal"
+      class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="پخش پیش‌نمایش جلسه"
+    >
+      <div class="relative w-full max-w-4xl">
+        <div class="mb-3 flex items-center justify-between gap-4">
+          <h3 data-modal-title class="truncate text-sm font-bold text-white">پیش‌نمایش جلسه</h3>
+          <button
+            type="button"
+            data-modal-close
+            aria-label="بستن"
+            class="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/20 text-white transition hover:bg-white/10"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <video class="aspect-video w-full rounded-2xl bg-black ring-1 ring-white/10" controls playsinline preload="none"></video>
+      </div>
+    </div>
+
     <script src="/static/app.js" defer></script>
   </>
 )
