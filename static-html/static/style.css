@@ -1,0 +1,174 @@
+/* ==========================================================================
+   دِوکَست — استایل‌های سفارشی (مکمل Tailwind)
+   ========================================================================== */
+
+:root {
+  --ring: 99 102 241;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* اعداد فارسی برای بخش‌های آماری */
+[data-fa-num] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- پس‌زمینه گرید ظریف ---------- */
+.bg-grid {
+  background-image: linear-gradient(to right, rgba(100, 116, 139, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(100, 116, 139, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.dark .bg-grid {
+  background-image: linear-gradient(to right, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+}
+.bg-grid-fade {
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+/* ---------- هاله‌های نورانی ---------- */
+.glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-indigo {
+  background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+}
+.glow-violet {
+  background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+}
+.glow-cyan {
+  background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+}
+
+/* ---------- کارت شیشه‌ای ---------- */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+.dark .glass {
+  background: rgba(17, 17, 27, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+/* ---------- حاشیه گرادیانی ---------- */
+.card-gradient-border {
+  position: relative;
+  background-clip: padding-box;
+}
+.card-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.08) 40%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.card-gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* ---------- ظاهر شدن با اسکرول ----------
+   مهم: فقط وقتی جاوااسکریپت فعال است محتوا پنهان می‌شود.
+   کلاس .js توسط اسکریپت درون <head> روی <html> گذاشته می‌شود؛
+   پس اگر JS اجرا نشود، همهٔ محتوا بلافاصله دیده می‌شود. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.js .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ---------- توقف انیمیشن‌های نامحدود ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-float,
+  .animate-pulse {
+    animation: none !important;
+  }
+}
+
+/* ---------- نوار تکنولوژی ---------- */
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+/* ---------- اسکرول‌بار ظریف ---------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  background-clip: content-box;
+}
+
+/* ---------- آکاردئون FAQ ---------- */
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details[open] .faq-icon {
+  transform: rotate(45deg);
+}
+.faq-icon {
+  transition: transform 0.3s ease;
+}
+
+/* ---------- فوکوس قابل‌دسترس ---------- */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+  border-radius: 8px;
+}

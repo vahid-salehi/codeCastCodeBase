@@ -182,7 +182,22 @@ seed_lessons.sql               # سرفصل و ویدیوی نمونه برای 
 public/static/
 ├── app.js                 # دارک‌مود، reveal، شمارنده، منو، فرم‌ها، OTP، پلیر ویدیو، مودال جلسه
 ├── style.css              # استایل‌های سفارشی
-└── tailwind.config.js     # تنظیمات Tailwind CDN
+├── tailwind.config.js     # تنظیمات Tailwind CDN (نسخهٔ Hono)
+└── img/                   # ۱۴ تصویر محلی (cover دوره‌ها، مسیرها، آواتار مدرسان)
+tools/
+├── build_static.py        # تولیدکنندهٔ سایت استاتیک (HTML خالص)
+├── localize_images.py     # دانلود/تبدیل/بازاندازه‌گیری تصاویر به public/static/img
+└── tw/
+    ├── tailwind.config.cjs # تنظیمات Tailwind برای نسخهٔ استاتیک
+    └── input.css          # ورودی @tailwind base/components/utilities
+static-html/               # خروجی نهایی استاتیک (بدون سرور، بدون فریم‌ورک)
+├── index.html
+├── paths/{index,frontend,backend,ai-data,mobile}/index.html
+├── courses/{index,js-modern,react-pro,node-api,python-data,ml-basics,react-native-app}/index.html
+├── instructors/{sara-mohammadi,amir-rezaei,negar-karimi,hossein-tabrizi}/index.html
+├── login/index.html
+├── register/index.html
+└── static/{app.js, style.css, tailwind.css, img/}
 ```
 
 ## توسعهٔ محلی
@@ -194,6 +209,36 @@ pm2 start ecosystem.config.cjs      # اجرای سرویس روی پورت 3000
 npm run db:reset                    # بازنشانی کامل پایگاه‌داده محلی
 pm2 logs webapp --nostream          # مشاهدهٔ لاگ
 ```
+
+## نسخهٔ استاتیک HTML/CSS (بدون React / Next.js / فریم‌ورک)
+
+علاوه بر نسخهٔ Hono، یک نسخهٔ کامل **استاتیک** از تمام صفحات در پوشهٔ `static-html/` تولید می‌شود
+که فقط با **HTML خالص + Tailwind** کار می‌کند: بدون React، بدون Next.js، بدون JSX و بدون نیاز به سرور.
+
+### تولید مجدد
+```bash
+python3 tools/localize_images.py   # ۱۴ تصویر را به public/static/img دانلود و تبدیل می‌کند
+python3 tools/build_static.py      # ۱۹ صفحه را می‌گیرد، بازنویسی می‌کند و Tailwind را کامپایل می‌کند
+# یا یک‌جا:
+npm run build:static
+```
+
+### اجرای نسخهٔ استاتیک
+```bash
+npm run serve:static               # http://localhost:4000
+# یا هر وب‌سرور استاتیک دیگر؛ محتوا با آپلود روی هر هاست/CDN کار می‌کند
+```
+
+### نکات فنی نسخهٔ استاتیک
+- **Tailwind کامپایل‌شده**: `static/tailwind.css` (~۴۸KB) با CLI ساخته می‌شود
+  (`npx tailwindcss -c tools/tw/tailwind.config.cjs --minify`) — دیگر خبری از `cdn.tailwindcss.com` نیست.
+- **تولید**: `build_static.py` صفحات را از سرور Hono می‌گیرد، همهٔ خصیصه‌های `href/src/action/poster`
+  که با `/` شروع می‌شوند را به مسیرهای نسبی (`../`) بازنویسی می‌کند تا در صفحات تودرتو تصویر/لینک نشکند.
+- **تصاویر محلی**: همهٔ تصاویر به JPEG بهینه تبدیل و داخل `static/img/` ذخیره شده‌اند
+  (CDN تصویر پروژه با CSP `img-src data:` بلاک می‌شد).
+- **حالت استاتیک**: `app.js` با `<meta name="devcast-build" content="static">` تشخیص می‌دهد
+  که سرور API وجود ندارد؛ فرم‌های ثبت‌نام/OTP پیام «این نسخهٔ استاتیک است» را نشان می‌دهند
+  و به سرور درخواست بی‌فایده نمی‌زنند. بقیهٔ تعامل‌ها (دارک‌مود، reveal، منو، مودال ویدیو) کاملاً کار می‌کنند.
 
 ## استقرار
 - **پلتفرم**: Cloudflare Pages + D1

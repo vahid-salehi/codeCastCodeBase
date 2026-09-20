@@ -10,6 +10,8 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
     "test": "curl http://localhost:3000/api/health",
+    "build:static": "python3 tools/localize_images.py && python3 tools/build_static.py",
+    "serve:static": "python3 -m http.server 4000 --bind 0.0.0.0 --directory static-html",
     "db:migrate:local": "wrangler d1 migrations apply webapp-production --local",
     "db:migrate:prod": "wrangler d1 migrations apply webapp-production",
     "db:seed": "wrangler d1 execute webapp-production --local --file=./seed.sql",
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
+    "tailwindcss": "^3.4.17",
     "vite": "^8.1.4",
     "wrangler": "^4.110.0"
   }
